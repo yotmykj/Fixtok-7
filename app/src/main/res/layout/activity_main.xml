@@ -1,57 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/fixtok_background">
+    android:background="#000000">
 
-    <!-- Полноэкранный WebView — 100% доступного экрана -->
+    <!-- TikTok WebView -->
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:focusable="true"
+        android:focusableInTouchMode="true" />
 
-    <!-- Контейнер для полноэкранного HTML5 video -->
+    <!-- HTML5 fullscreen video -->
     <FrameLayout
         android:id="@+id/fullscreenContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="#000000"
         android:visibility="gone" />
 
-    <!-- Splash screen: логотип FixTok + «by Manas» на тёмном фоне -->
-    <LinearLayout
+    <!-- Виртуальная мышь -->
+    <ImageView
+        android:id="@+id/mouseCursor"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="top|start"
+        android:contentDescription="Mouse cursor"
+        android:elevation="100dp"
+        android:src="@drawable/ic_mouse_cursor" />
+
+    <!-- Splash -->
+    <FrameLayout
         android:id="@+id/splashContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/fixtok_background"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:background="#000000"
+        android:elevation="200dp">
 
-        <ImageView
-            android:id="@+id/splashLogo"
-            android:layout_width="160dp"
-            android:layout_height="160dp"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_fixtok_logo" />
-
-        <TextView
-            android:id="@+id/splashTitle"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/app_name"
-            android:textColor="@color/fixtok_text"
-            android:textSize="34sp"
-            android:textStyle="bold" />
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/splashByManas"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/by_manas"
-            android:textColor="@color/fixtok_text_dim"
-            android:textSize="16sp" />
-    </LinearLayout>
+            <ImageView
+                android:id="@+id/splashLogo"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:contentDescription="FixTok"
+                android:src="@mipmap/ic_launcher" />
+
+            <TextView
+                android:id="@+id/splashTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="FixTok"
+                android:textColor="#FFFFFF"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/splashByManas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="by Manas"
+                android:textColor="#AAAAAA"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
 
 </FrameLayout>
