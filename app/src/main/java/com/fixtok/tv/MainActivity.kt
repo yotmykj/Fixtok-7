@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
 import android.os.SystemClock
-import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -49,10 +48,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         enterFullscreen()
-
         setupWebView()
         setupMouse()
-
         animateSplashIn()
 
         if (savedInstanceState == null) {
@@ -71,7 +68,6 @@ class MainActivity : AppCompatActivity() {
         window.navigationBarColor = Color.BLACK
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-
             window.setDecorFitsSystemWindows(false)
 
             window.insetsController?.let { controller ->
@@ -79,9 +75,7 @@ class MainActivity : AppCompatActivity() {
                 controller.systemBarsBehavior =
                     WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
-
         } else {
-
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
@@ -122,23 +116,15 @@ class MainActivity : AppCompatActivity() {
 
             cacheMode = WebSettings.LOAD_DEFAULT
 
-            /*
-             * Desktop viewport.
-             */
+            // Desktop layout
             useWideViewPort = true
             loadWithOverviewMode = false
 
-            /*
-             * Не позволяем WebView менять масштаб
-             * от случайных жестов.
-             */
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
 
-            /*
-             * Desktop Chrome.
-             */
+            // Desktop Chrome User-Agent
             userAgentString = DESKTOP_USER_AGENT
 
             defaultFontSize = 16
@@ -168,11 +154,7 @@ class MainActivity : AppCompatActivity() {
                     view: WebView,
                     url: String
                 ) {
-
-                    super.onPageFinished(
-                        view,
-                        url
-                    )
+                    super.onPageFinished(view, url)
 
                     if (
                         !splashHidden &&
@@ -187,7 +169,6 @@ class MainActivity : AppCompatActivity() {
                     request: WebResourceRequest,
                     error: android.webkit.WebResourceError
                 ) {
-
                     super.onReceivedError(
                         view,
                         request,
@@ -195,13 +176,10 @@ class MainActivity : AppCompatActivity() {
                     )
 
                     if (request.isForMainFrame) {
-
                         view.postDelayed({
-
                             if (!splashHidden) {
                                 view.loadUrl(TIKTOK_URL)
                             }
-
                         }, 5000)
                     }
                 }
@@ -263,15 +241,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupMouse() {
 
         binding.mouseCursor.apply {
-
             isClickable = false
             isFocusable = false
             isFocusableInTouchMode = false
 
-            /*
-             * Курсор только визуальный.
-             * Он не блокирует WebView.
-             */
             setOnTouchListener { _, _ ->
                 false
             }
@@ -340,10 +313,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /*
-     * Настоящий MotionEvent для WebView.
-     *
-     * Это намного ближе к обычной мыши,
-     * чем JavaScript element.click().
+     * Клик виртуальной мыши.
      */
     private fun clickMouse() {
 
@@ -357,17 +327,15 @@ class MainActivity : AppCompatActivity() {
             mouseY +
                 binding.mouseCursor.height / 2f
 
-        val x =
-            cursorCenterX.coerceIn(
-                0f,
-                webView.width.toFloat()
-            )
+        val x = cursorCenterX.coerceIn(
+            0f,
+            webView.width.toFloat()
+        )
 
-        val y =
-            cursorCenterY.coerceIn(
-                0f,
-                webView.height.toFloat()
-            )
+        val y = cursorCenterY.coerceIn(
+            0f,
+            webView.height.toFloat()
+        )
 
         val downTime =
             SystemClock.uptimeMillis()
@@ -381,12 +349,6 @@ class MainActivity : AppCompatActivity() {
                 y,
                 0
             )
-
-        downEvent.source =
-            InputDevice.SOURCE_MOUSE
-
-        downEvent.buttonState =
-            MotionEvent.BUTTON_PRIMARY
 
         webView.dispatchTouchEvent(
             downEvent
@@ -407,12 +369,6 @@ class MainActivity : AppCompatActivity() {
                 0
             )
 
-        upEvent.source =
-            InputDevice.SOURCE_MOUSE
-
-        upEvent.buttonState =
-            MotionEvent.BUTTON_PRIMARY
-
         webView.dispatchTouchEvent(
             upEvent
         )
@@ -430,49 +386,39 @@ class MainActivity : AppCompatActivity() {
         event: KeyEvent
     ): Boolean {
 
-        if (event.action ==
-            KeyEvent.ACTION_DOWN
-        ) {
+        if (event.action == KeyEvent.ACTION_DOWN) {
 
             when (event.keyCode) {
 
                 KeyEvent.KEYCODE_DPAD_UP -> {
-
                     moveMouse(
                         0f,
                         -MOUSE_SPEED
                     )
-
                     return true
                 }
 
                 KeyEvent.KEYCODE_DPAD_DOWN -> {
-
                     moveMouse(
                         0f,
                         MOUSE_SPEED
                     )
-
                     return true
                 }
 
                 KeyEvent.KEYCODE_DPAD_LEFT -> {
-
                     moveMouse(
                         -MOUSE_SPEED,
                         0f
                     )
-
                     return true
                 }
 
                 KeyEvent.KEYCODE_DPAD_RIGHT -> {
-
                     moveMouse(
                         MOUSE_SPEED,
                         0f
                     )
-
                     return true
                 }
 
@@ -488,9 +434,7 @@ class MainActivity : AppCompatActivity() {
 
                 KeyEvent.KEYCODE_BACK -> {
 
-                    if (
-                        binding.webView.canGoBack()
-                    ) {
+                    if (binding.webView.canGoBack()) {
                         binding.webView.goBack()
                     } else {
                         finish()
@@ -513,7 +457,6 @@ class MainActivity : AppCompatActivity() {
     private fun animateSplashIn() {
 
         binding.splashLogo.apply {
-
             alpha = 0f
             scaleX = 0.8f
             scaleY = 0.8f
@@ -527,7 +470,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.splashTitle.apply {
-
             alpha = 0f
 
             animate()
@@ -538,7 +480,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.splashByManas.apply {
-
             alpha = 0f
 
             animate()
@@ -562,7 +503,6 @@ class MainActivity : AppCompatActivity() {
             .alpha(0f)
             .setDuration(500L)
             .withEndAction {
-
                 binding.splashContainer.visibility =
                     View.GONE
             }
@@ -579,17 +519,12 @@ class MainActivity : AppCompatActivity() {
         outState: Bundle
     ) {
 
-        binding.webView.saveState(
-            outState
-        )
+        binding.webView.saveState(outState)
 
-        super.onSaveInstanceState(
-            outState
-        )
+        super.onSaveInstanceState(outState)
     }
 
     override fun onResume() {
-
         super.onResume()
 
         binding.webView.onResume()
@@ -607,11 +542,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
 
         binding.webView.stopLoading()
-
-        binding.webView.loadUrl(
-            "about:blank"
-        )
-
+        binding.webView.loadUrl("about:blank")
         binding.webView.removeAllViews()
         binding.webView.destroy()
 
