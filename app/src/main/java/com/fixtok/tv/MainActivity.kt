@@ -18,21 +18,29 @@ import androidx.appcompat.app.AppCompatActivity
 import com.fixtok.tv.databinding.ActivityMainBinding
 
 /**
- * FixTok — Android TV клиент TikTok на базе одного полноэкранного WebView.
+ * FixTok
  *
- * Схема: FixTok → WebView → TikTok
+ * Android TV WebView-клиент.
  *
- * Splash screen с логотипом и подписью «by Manas» показывается до тех пор,
- * пока WebView успешно не загрузит TikTok, затем плавно исчезает.
+ * FixTok → WebView → TikTok
+ *
+ * WebView работает как Desktop Chrome,
+ * чтобы TikTok отдавал desktop-версию сайта.
  */
 class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TIKTOK_URL = "https://www.tiktok.com/"
         private const val SPLASH_FADE_DURATION_MS = 500L
+
+        private const val DESKTOP_USER_AGENT =
+            "Mozilla/5.0 (X11; Linux x86_64) " +
+            "AppleWebKit/537.36 (KHTML, like Gecko) " +
+            "Chrome/131.0.0.0 Safari/537.36"
     }
 
     private lateinit var binding: ActivityMainBinding
+
     private var splashHidden = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +51,7 @@ class MainActivity : AppCompatActivity() {
 
         enterFullscreen()
         animateSplashIn()
-        setupWebView(savedInstanceState)
+        setupWebView()
 
         if (savedInstanceState == null) {
             binding.webView.loadUrl(TIKTOK_URL)
@@ -52,96 +60,149 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Полноэкранный режим: скрываем статус-бар и навигацию. */
+    /**
+     * Полноэкранный режим.
+     */
     private fun enterFullscreen() {
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+
             window.setDecorFitsSystemWindows(false)
+
             window.insetsController?.let { controller ->
-                controller.hide(WindowInsets.Type.systemBars())
+
+                controller.hide(
+                    WindowInsets.Type.systemBars()
+                )
+
                 controller.systemBarsBehavior =
                     WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
+
         } else {
+
             @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                )
+            window.decorView.systemUiVisibility =
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         }
     }
 
+    /**
+     * Настройка WebView.
+     */
     @SuppressLint("SetJavaScriptEnabled")
-    private fun setupWebView(savedInstanceState: Bundle?) {
+    private fun setupWebView() {
+
         val webView = binding.webView
 
-        // WebView занимает 100% доступного экрана
         webView.layoutParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT
         )
 
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        webView.setLayerType(
+            View.LAYER_TYPE_HARDWARE,
+            null
+        )
+
         webView.isFocusable = true
         webView.isFocusableInTouchMode = true
 
         webView.settings.apply {
+
+            // JavaScript
             javaScriptEnabled = true
+
+            // Storage
             domStorageEnabled = true
             databaseEnabled = true
-            javaScriptCanOpenWindowsAutomatically = true
 
-            // Медиа и HTML5 video
+            // Windows
+            javaScriptCanOpenWindowsAutomatically = true
+            setSupportMultipleWindows(false)
+
+            // Video
             mediaPlaybackRequiresUserGesture = false
+
+            // Security
             allowFileAccess = false
             allowContentAccess = false
 
-            // Кеширование
+            // Cache
             cacheMode = WebSettings.LOAD_DEFAULT
 
-            // Отображение под TV-экран
+            // Desktop layout
             useWideViewPort = true
             loadWithOverviewMode = true
+
+            // Disable zoom
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
 
-            // Современный user agent — чтобы TikTok отдавал десктопную версию
-            userAgentString = userAgentString.replace("; wv", "")
+            /*
+             * IMPORTANT
+             *
+             * WebView представляется как Desktop Chrome,
+             * а не Android WebView.
+             */
+            userAgentString = DESKTOP_USER_AGENT
         }
 
-        // Cookies: обычные, сторонние и постоянные
+        /*
+         * Cookies
+         */
         CookieManager.getInstance().apply {
+
             setAcceptCookie(true)
-            setAcceptThirdPartyCookies(webView, true)
+
+            setAcceptThirdPartyCookies(
+                webView,
+                true
+            )
         }
 
-        // Сохранение сессии WebView между поворотами/пересозданием
-        if (savedInstanceState != null) {
-            webView.restoreState(savedInstanceState)
-        }
-
+        /*
+         * WebViewClient
+         */
         webView.webViewClient = object : WebViewClient() {
 
             override fun shouldOverrideUrlLoading(
                 view: WebView,
                 request: WebResourceRequest
             ): Boolean {
-                // Вся навигация остаётся внутри WebView — без собственного UI
+
+                // Все ссылки остаются внутри WebView.
                 return false
             }
 
-            override fun onPageFinished(view: WebView, url: String) {
-                super.onPageFinished(view, url)
-                // Splash скрывается только после успешной загрузки TikTok,
-                // а не по таймеру
-                hideSplash()
+            override fun onPageFinished(
+                view: WebView,
+                url: String
+            ) {
+
+                super.onPageFinished(
+                    view,
+                    url
+                )
+
+                /*
+                 * Splash скрывается только после загрузки
+                 * TikTok, а не через таймер.
+                 */
+                if (
+                    !splashHidden &&
+                    url.contains("tiktok.com")
+                ) {
+                    hideSplash()
+                }
             }
 
             override fun onReceivedError(
@@ -149,125 +210,245 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest,
                 error: android.webkit.WebResourceError
             ) {
-                // Ошибка — splash остаётся, WebView покажет страницу ошибки.
-                // Можно добавить повторную попытку:
+
+                super.onReceivedError(
+                    view,
+                    request,
+                    error
+                )
+
+                /*
+                 * Повторная попытка только для
+                 * основной страницы.
+                 */
                 if (request.isForMainFrame) {
+
                     view.postDelayed({
-                        if (!splashHidden) view.loadUrl(TIKTOK_URL)
+
+                        if (!splashHidden) {
+                            view.loadUrl(TIKTOK_URL)
+                        }
+
                     }, 5000)
                 }
             }
         }
 
-        webView.webChromeClient = object : WebChromeClient() {
-            // Полноэкранное HTML5 video
-            private var customView: View? = null
-            private var customViewCallback: CustomViewCallback? = null
+        /*
+         * WebChromeClient
+         *
+         * Нужен для HTML5 video/fullscreen.
+         */
+        webView.webChromeClient =
+            object : WebChromeClient() {
 
-            override fun onShowCustomView(view: View, callback: CustomViewCallback) {
-                customView = view
-                customViewCallback = callback
-                binding.fullscreenContainer.addView(
-                    view,
-                    FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
+                private var customView: View? = null
+
+                private var customViewCallback:
+                    CustomViewCallback? = null
+
+                override fun onShowCustomView(
+                    view: View,
+                    callback: CustomViewCallback
+                ) {
+
+                    customView = view
+                    customViewCallback = callback
+
+                    binding.fullscreenContainer.addView(
+                        view,
+                        FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT
+                        )
                     )
-                )
-                binding.fullscreenContainer.visibility = View.VISIBLE
-            }
 
-            override fun onHideCustomView() {
-                customView?.let { binding.fullscreenContainer.removeView(it) }
-                customView = null
-                customViewCallback?.onCustomViewHidden()
-                binding.fullscreenContainer.visibility = View.GONE
+                    binding.fullscreenContainer.visibility =
+                        View.VISIBLE
+                }
+
+                override fun onHideCustomView() {
+
+                    customView?.let {
+                        binding.fullscreenContainer.removeView(it)
+                    }
+
+                    customView = null
+
+                    customViewCallback?.onCustomViewHidden()
+                    customViewCallback = null
+
+                    binding.fullscreenContainer.visibility =
+                        View.GONE
+                }
             }
-        }
 
         webView.requestFocus()
     }
 
-    /** Плавная анимация появления splash screen при запуске. */
+    /**
+     * Анимация появления Splash.
+     */
     private fun animateSplashIn() {
+
         binding.splashLogo.apply {
+
             alpha = 0f
+
             scaleX = 0.8f
             scaleY = 0.8f
-            animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700L).start()
+
+            animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(700L)
+                .start()
         }
+
         binding.splashTitle.apply {
+
             alpha = 0f
-            animate().alpha(1f).setStartDelay(300L).setDuration(500L).start()
+
+            animate()
+                .alpha(1f)
+                .setStartDelay(300L)
+                .setDuration(500L)
+                .start()
         }
+
         binding.splashByManas.apply {
+
             alpha = 0f
-            animate().alpha(1f).setStartDelay(500L).setDuration(500L).start()
+
+            animate()
+                .alpha(1f)
+                .setStartDelay(500L)
+                .setDuration(500L)
+                .start()
         }
     }
 
-    /** Плавное исчезновение splash screen после загрузки TikTok. */
+    /**
+     * Скрытие Splash.
+     */
     private fun hideSplash() {
-        if (splashHidden) return
+
+        if (splashHidden) {
+            return
+        }
+
         splashHidden = true
 
-        binding.splashContainer.animate()
+        binding.splashContainer
+            .animate()
             .alpha(0f)
-            .setDuration(SPLASH_FADE_DURATION_MS)
+            .setDuration(
+                SPLASH_FADE_DURATION_MS
+            )
             .withEndAction {
-                binding.splashContainer.visibility = View.GONE
+
+                binding.splashContainer.visibility =
+                    View.GONE
             }
             .start()
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
+    /**
+     * Сохраняем состояние WebView.
+     */
+    override fun onSaveInstanceState(
+        outState: Bundle
+    ) {
+
         binding.webView.saveState(outState)
+
+        super.onSaveInstanceState(outState)
     }
 
     /**
-     * Кнопка Back на пульте:
-     * если WebView может вернуться назад — возвращаемся в истории,
-     * иначе — закрываем Activity.
+     * Back на Android TV-пульте.
      */
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
+
         if (binding.webView.canGoBack()) {
+
             binding.webView.goBack()
+
         } else {
+
             super.onBackPressed()
         }
     }
 
-    /** Обработка D-pad / OK / Back с пульта Android TV. */
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+    /**
+     * D-pad / OK / Back.
+     */
+    override fun onKeyDown(
+        keyCode: Int,
+        event: KeyEvent?
+    ): Boolean {
+
         when (keyCode) {
+
             KeyEvent.KEYCODE_BACK -> {
+
+                @Suppress("DEPRECATION")
                 onBackPressed()
+
                 return true
             }
+
             KeyEvent.KEYCODE_DPAD_CENTER,
             KeyEvent.KEYCODE_ENTER -> {
-                // Передаём OK/Select в WebView (фокус уже на нём)
-                return super.onKeyDown(keyCode, event)
+
+                return super.onKeyDown(
+                    keyCode,
+                    event
+                )
             }
         }
-        return super.onKeyDown(keyCode, event)
+
+        return super.onKeyDown(
+            keyCode,
+            event
+        )
     }
 
+    /**
+     * Resume WebView.
+     */
     override fun onResume() {
+
         super.onResume()
+
         binding.webView.onResume()
         binding.webView.resumeTimers()
     }
 
+    /**
+     * Pause WebView.
+     */
     override fun onPause() {
+
         binding.webView.onPause()
         binding.webView.pauseTimers()
+
         super.onPause()
     }
 
+    /**
+     * Destroy WebView.
+     */
     override fun onDestroy() {
+
+        binding.webView.stopLoading()
+        binding.webView.loadUrl("about:blank")
+        binding.webView.clearHistory()
+        binding.webView.removeAllViews()
         binding.webView.destroy()
+
         super.onDestroy()
     }
 }
