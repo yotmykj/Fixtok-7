@@ -43,4 +43,14 @@ FixTok
   │
   └── WebView
        │
+
+
        └── TikTok Desktop
+
+
+
+Usdt
+
+0xf3582caCE9450d8A9d9291D359Af75c89FC86C75
+
+Thank you for supporting FixTok! ❤️
