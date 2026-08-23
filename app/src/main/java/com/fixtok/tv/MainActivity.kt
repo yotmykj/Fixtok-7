@@ -33,7 +33,6 @@ class MainActivity : AppCompatActivity() {
             "Chrome/131.0.0.0 Safari/537.36"
 
         private const val MOUSE_SPEED = 16f
-
         private const val BASS_STRENGTH = 600
         private const val DESKTOP_SCALE = 90
     }
@@ -86,11 +85,11 @@ class MainActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility =
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    View.SYSTEM_UI_FLAG_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         }
     }
 
@@ -139,9 +138,7 @@ class MainActivity : AppCompatActivity() {
             useWideViewPort = true
             loadWithOverviewMode = true
 
-            // 90% scale
-            initialScale = DESKTOP_SCALE
-
+            // Zoom settings
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
@@ -153,6 +150,9 @@ class MainActivity : AppCompatActivity() {
 
             userAgentString = DESKTOP_USER_AGENT
         }
+
+        // Set WebView scale correctly.
+        webView.setInitialScale(DESKTOP_SCALE)
 
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
@@ -229,6 +229,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onHideCustomView() {
+
                 customView?.let {
                     binding.fullscreenContainer.removeView(it)
                 }
@@ -247,6 +248,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupMouse() {
+
         binding.mouseCursor.apply {
             isClickable = false
             isFocusable = false
