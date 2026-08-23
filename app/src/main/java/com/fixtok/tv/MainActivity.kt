@@ -2,6 +2,7 @@ package com.fixtok.tv
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.media.audiofx.BassBoost
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.KeyEvent
@@ -32,6 +33,9 @@ class MainActivity : AppCompatActivity() {
             "Chrome/131.0.0.0 Safari/537.36"
 
         private const val MOUSE_SPEED = 16f
+
+        private const val BASS_STRENGTH = 600
+        private const val DESKTOP_SCALE = 90
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -41,6 +45,8 @@ class MainActivity : AppCompatActivity() {
     private var mouseX = 0f
     private var mouseY = 0f
 
+    private var bassBoost: BassBoost? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -48,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         enterFullscreen()
+        setupAudio()
         setupWebView()
         setupMouse()
         animateSplashIn()
@@ -87,6 +94,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupAudio() {
+        try {
+            bassBoost = BassBoost(0, 0).apply {
+                if (strengthSupported) {
+                    setStrength(BASS_STRENGTH.toShort())
+                    enabled = true
+                }
+            }
+        } catch (_: Throwable) {
+            bassBoost = null
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
 
@@ -101,7 +121,6 @@ class MainActivity : AppCompatActivity() {
         webView.isFocusableInTouchMode = true
 
         webView.settings.apply {
-
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
@@ -116,130 +135,118 @@ class MainActivity : AppCompatActivity() {
 
             cacheMode = WebSettings.LOAD_DEFAULT
 
-            // Desktop layout
+            // Desktop TikTok
             useWideViewPort = true
-            loadWithOverviewMode = false
+            loadWithOverviewMode = true
+
+            // 90% scale
+            initialScale = DESKTOP_SCALE
 
             setSupportZoom(false)
             builtInZoomControls = false
             displayZoomControls = false
 
-            // Desktop Chrome User-Agent
-            userAgentString = DESKTOP_USER_AGENT
+            textZoom = 100
 
             defaultFontSize = 16
             defaultFixedFontSize = 16
-            textZoom = 100
+
+            userAgentString = DESKTOP_USER_AGENT
         }
 
         CookieManager.getInstance().apply {
             setAcceptCookie(true)
-            setAcceptThirdPartyCookies(
-                webView,
-                true
-            )
+            setAcceptThirdPartyCookies(webView, true)
         }
 
-        webView.webViewClient =
-            object : WebViewClient() {
+        webView.webViewClient = object : WebViewClient() {
 
-                override fun shouldOverrideUrlLoading(
-                    view: WebView,
-                    request: WebResourceRequest
-                ): Boolean {
-                    return false
+            override fun shouldOverrideUrlLoading(
+                view: WebView,
+                request: WebResourceRequest
+            ): Boolean {
+                return false
+            }
+
+            override fun onPageFinished(
+                view: WebView,
+                url: String
+            ) {
+                super.onPageFinished(view, url)
+
+                // Re-apply 90% after TikTok finishes loading.
+                view.post {
+                    view.setInitialScale(DESKTOP_SCALE)
                 }
 
-                override fun onPageFinished(
-                    view: WebView,
-                    url: String
+                if (
+                    !splashHidden &&
+                    url.contains("tiktok.com")
                 ) {
-                    super.onPageFinished(view, url)
-
-                    if (
-                        !splashHidden &&
-                        url.contains("tiktok.com")
-                    ) {
-                        hideSplash()
-                    }
-                }
-
-                override fun onReceivedError(
-                    view: WebView,
-                    request: WebResourceRequest,
-                    error: android.webkit.WebResourceError
-                ) {
-                    super.onReceivedError(
-                        view,
-                        request,
-                        error
-                    )
-
-                    if (request.isForMainFrame) {
-                        view.postDelayed({
-                            if (!splashHidden) {
-                                view.loadUrl(TIKTOK_URL)
-                            }
-                        }, 5000)
-                    }
+                    hideSplash()
                 }
             }
 
-        webView.webChromeClient =
-            object : WebChromeClient() {
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: android.webkit.WebResourceError
+            ) {
+                super.onReceivedError(view, request, error)
 
-                private var customView: View? = null
-
-                private var customViewCallback:
-                    CustomViewCallback? = null
-
-                override fun onShowCustomView(
-                    view: View,
-                    callback: CustomViewCallback
-                ) {
-
-                    customView = view
-                    customViewCallback = callback
-
-                    binding.fullscreenContainer.addView(
-                        view,
-                        FrameLayout.LayoutParams(
-                            FrameLayout.LayoutParams.MATCH_PARENT,
-                            FrameLayout.LayoutParams.MATCH_PARENT
-                        )
-                    )
-
-                    binding.fullscreenContainer.visibility =
-                        View.VISIBLE
-                }
-
-                override fun onHideCustomView() {
-
-                    customView?.let {
-                        binding.fullscreenContainer.removeView(it)
-                    }
-
-                    customView = null
-
-                    customViewCallback?.onCustomViewHidden()
-                    customViewCallback = null
-
-                    binding.fullscreenContainer.visibility =
-                        View.GONE
+                if (request.isForMainFrame) {
+                    view.postDelayed({
+                        if (!splashHidden) {
+                            view.loadUrl(TIKTOK_URL)
+                        }
+                    }, 5000)
                 }
             }
+        }
+
+        webView.webChromeClient = object : WebChromeClient() {
+
+            private var customView: View? = null
+            private var customViewCallback: CustomViewCallback? = null
+
+            override fun onShowCustomView(
+                view: View,
+                callback: CustomViewCallback
+            ) {
+                customView = view
+                customViewCallback = callback
+
+                binding.fullscreenContainer.addView(
+                    view,
+                    FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    )
+                )
+
+                binding.fullscreenContainer.visibility =
+                    View.VISIBLE
+            }
+
+            override fun onHideCustomView() {
+                customView?.let {
+                    binding.fullscreenContainer.removeView(it)
+                }
+
+                customView = null
+
+                customViewCallback?.onCustomViewHidden()
+                customViewCallback = null
+
+                binding.fullscreenContainer.visibility =
+                    View.GONE
+            }
+        }
 
         webView.requestFocus()
     }
 
-    /*
-     * =========================
-     * VIRTUAL MOUSE
-     * =========================
-     */
-
     private fun setupMouse() {
-
         binding.mouseCursor.apply {
             isClickable = false
             isFocusable = false
@@ -253,11 +260,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun centerMouse() {
 
-        val width =
-            binding.root.width.toFloat()
-
-        val height =
-            binding.root.height.toFloat()
+        val width = binding.root.width.toFloat()
+        val height = binding.root.height.toFloat()
 
         if (width <= 0f || height <= 0f) {
             return
@@ -274,11 +278,8 @@ class MainActivity : AppCompatActivity() {
         dy: Float
     ) {
 
-        val width =
-            binding.root.width.toFloat()
-
-        val height =
-            binding.root.height.toFloat()
+        val width = binding.root.width.toFloat()
+        val height = binding.root.height.toFloat()
 
         if (width <= 0f || height <= 0f) {
             return
@@ -286,46 +287,31 @@ class MainActivity : AppCompatActivity() {
 
         mouseX = min(
             width - binding.mouseCursor.width,
-            max(
-                0f,
-                mouseX + dx
-            )
+            max(0f, mouseX + dx)
         )
 
         mouseY = min(
             height - binding.mouseCursor.height,
-            max(
-                0f,
-                mouseY + dy
-            )
+            max(0f, mouseY + dy)
         )
 
         updateMousePosition()
     }
 
     private fun updateMousePosition() {
-
-        binding.mouseCursor.translationX =
-            mouseX
-
-        binding.mouseCursor.translationY =
-            mouseY
+        binding.mouseCursor.translationX = mouseX
+        binding.mouseCursor.translationY = mouseY
     }
 
-    /*
-     * Клик виртуальной мыши.
-     */
     private fun clickMouse() {
 
         val webView = binding.webView
 
         val cursorCenterX =
-            mouseX +
-                binding.mouseCursor.width / 2f
+            mouseX + binding.mouseCursor.width / 2f
 
         val cursorCenterY =
-            mouseY +
-                binding.mouseCursor.height / 2f
+            mouseY + binding.mouseCursor.height / 2f
 
         val x = cursorCenterX.coerceIn(
             0f,
@@ -337,50 +323,34 @@ class MainActivity : AppCompatActivity() {
             webView.height.toFloat()
         )
 
-        val downTime =
-            SystemClock.uptimeMillis()
+        val downTime = SystemClock.uptimeMillis()
 
-        val downEvent =
-            MotionEvent.obtain(
-                downTime,
-                downTime,
-                MotionEvent.ACTION_DOWN,
-                x,
-                y,
-                0
-            )
-
-        webView.dispatchTouchEvent(
-            downEvent
+        val downEvent = MotionEvent.obtain(
+            downTime,
+            downTime,
+            MotionEvent.ACTION_DOWN,
+            x,
+            y,
+            0
         )
 
+        webView.dispatchTouchEvent(downEvent)
         downEvent.recycle()
 
-        val upTime =
-            SystemClock.uptimeMillis()
+        val upTime = SystemClock.uptimeMillis()
 
-        val upEvent =
-            MotionEvent.obtain(
-                downTime,
-                upTime,
-                MotionEvent.ACTION_UP,
-                x,
-                y,
-                0
-            )
-
-        webView.dispatchTouchEvent(
-            upEvent
+        val upEvent = MotionEvent.obtain(
+            downTime,
+            upTime,
+            MotionEvent.ACTION_UP,
+            x,
+            y,
+            0
         )
 
+        webView.dispatchTouchEvent(upEvent)
         upEvent.recycle()
     }
-
-    /*
-     * =========================
-     * REMOTE CONTROL
-     * =========================
-     */
 
     override fun dispatchKeyEvent(
         event: KeyEvent
@@ -391,34 +361,22 @@ class MainActivity : AppCompatActivity() {
             when (event.keyCode) {
 
                 KeyEvent.KEYCODE_DPAD_UP -> {
-                    moveMouse(
-                        0f,
-                        -MOUSE_SPEED
-                    )
+                    moveMouse(0f, -MOUSE_SPEED)
                     return true
                 }
 
                 KeyEvent.KEYCODE_DPAD_DOWN -> {
-                    moveMouse(
-                        0f,
-                        MOUSE_SPEED
-                    )
+                    moveMouse(0f, MOUSE_SPEED)
                     return true
                 }
 
                 KeyEvent.KEYCODE_DPAD_LEFT -> {
-                    moveMouse(
-                        -MOUSE_SPEED,
-                        0f
-                    )
+                    moveMouse(-MOUSE_SPEED, 0f)
                     return true
                 }
 
                 KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                    moveMouse(
-                        MOUSE_SPEED,
-                        0f
-                    )
+                    moveMouse(MOUSE_SPEED, 0f)
                     return true
                 }
 
@@ -447,12 +405,6 @@ class MainActivity : AppCompatActivity() {
 
         return super.dispatchKeyEvent(event)
     }
-
-    /*
-     * =========================
-     * SPLASH
-     * =========================
-     */
 
     private fun animateSplashIn() {
 
@@ -509,18 +461,10 @@ class MainActivity : AppCompatActivity() {
             .start()
     }
 
-    /*
-     * =========================
-     * LIFECYCLE
-     * =========================
-     */
-
     override fun onSaveInstanceState(
         outState: Bundle
     ) {
-
         binding.webView.saveState(outState)
-
         super.onSaveInstanceState(outState)
     }
 
@@ -529,6 +473,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.webView.onResume()
         binding.webView.resumeTimers()
+
+        try {
+            bassBoost?.enabled = true
+        } catch (_: Throwable) {
+        }
     }
 
     override fun onPause() {
@@ -536,13 +485,24 @@ class MainActivity : AppCompatActivity() {
         binding.webView.onPause()
         binding.webView.pauseTimers()
 
+        try {
+            bassBoost?.enabled = false
+        } catch (_: Throwable) {
+        }
+
         super.onPause()
     }
 
     override fun onDestroy() {
 
+        try {
+            bassBoost?.release()
+        } catch (_: Throwable) {
+        }
+
+        bassBoost = null
+
         binding.webView.stopLoading()
-        binding.webView.loadUrl("about:blank")
         binding.webView.removeAllViews()
         binding.webView.destroy()
 
