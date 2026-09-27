@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <color name="fixtok_background">#FF0B0B10</color>
-    <color name="fixtok_accent">#FF25F4EE</color>
-    <color name="fixtok_accent_alt">#FFFE2C55</color>
-    <color name="fixtok_text">#FFFFFFFF</color>
-    <color name="fixtok_text_dim">#99FFFFFF</color>
-    <color name="ic_launcher_background">#FF0B0B10</color>
-</resources>
