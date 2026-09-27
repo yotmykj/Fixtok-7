@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fixtok_background">
+
+    <!-- Login WebView -->
+    <WebView
+        android:id="@+id/loginWebView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/fixtok_background"
+        android:focusable="true"
+        android:focusableInTouchMode="true" />
+
+    <!-- Popup WebView (OAuth окна из window.open) -->
+    <FrameLayout
+        android:id="@+id/loginPopupContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/fixtok_background"
+        android:visibility="gone" />
+
+    <!-- TV title bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="@drawable/bg_top_bar"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="40dp"
+        android:paddingEnd="32dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="36dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/login_title"
+            android:textColor="@color/fixtok_text"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Подсказка: как управлять -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_hint_pill"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:text="@string/login_hint"
+        android:textColor="@color/fixtok_text_dim"
+        android:textSize="14sp" />
+
+    <!-- Виртуальная мышь — ТОЛЬКО внутри Login WebView -->
+    <ImageView
+        android:id="@+id/loginMouseCursor"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="top|start"
+        android:contentDescription="@string/mouse_cursor"
+        android:elevation="100dp"
+        android:src="@drawable/ic_mouse_cursor" />
+
+</FrameLayout>
